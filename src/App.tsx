@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import Particles from "./Particles";
 
 const WA = "https://wa.me/5562991758807";
 const TIPOS = ["Casa", "Apartamento", "Comércio", "Indústria", "Rural"];
@@ -40,10 +41,10 @@ export default function App() {
 
   return (
     <div className="shell">
+      <Particles />
       <div className="ambient" aria-hidden>
         <i className="orb orb-a" />
         <i className="orb orb-b" />
-        <i className="spark s1" /><i className="spark s2" /><i className="spark s3" /><i className="spark s4" />
       </div>
 
       {intro && (

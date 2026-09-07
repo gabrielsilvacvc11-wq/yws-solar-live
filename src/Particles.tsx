@@ -39,6 +39,7 @@ export default function Particles() {
 
     const tick = () => {
       ctx.clearRect(0, 0, w, h);
+      ctx.shadowBlur = 0;
       for (let i = 0; i < dots.length; i++) {
         const p = dots[i];
         p.x += p.vx;
@@ -47,10 +48,11 @@ export default function Particles() {
         if (p.x < 0 || p.x > w) p.vx *= -1;
         ctx.beginPath();
         ctx.fillStyle = `rgba(196,255,80,${p.a})`;
-        ctx.shadowColor = "rgba(180,255,40,.8)";
+        ctx.shadowColor = "rgba(180,255,40,.75)";
         ctx.shadowBlur = 8;
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fill();
+        ctx.shadowBlur = 0;
         for (let j = i + 1; j < dots.length; j++) {
           const q = dots[j];
           const dx = p.x - q.x;
@@ -58,7 +60,7 @@ export default function Particles() {
           const d = Math.hypot(dx, dy);
           if (d < 110) {
             ctx.beginPath();
-            ctx.strokeStyle = `rgba(160,255,70,${0.12 * (1 - d / 110)})`;
+            ctx.strokeStyle = `rgba(160,255,70,${0.14 * (1 - d / 110)})`;
             ctx.lineWidth = 0.7;
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(q.x, q.y);
@@ -75,5 +77,5 @@ export default function Particles() {
     };
   }, []);
 
-  return <canvas ref={ref} className="fx-canvas" aria-hidden />;
+  return <canvas ref={ref} className="fx-canvas" aria-hidden style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none" }} />;
 }

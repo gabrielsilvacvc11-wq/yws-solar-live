@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const WA = "https://wa.me/5562991758807";
 const TIPOS = ["Casa", "Apartamento", "Comércio", "Indústria", "Rural"];
@@ -8,12 +8,20 @@ const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", curren
 type Step = "form" | "result" | "lead";
 
 export default function App() {
+  const [intro, setIntro] = useState(true);
+  const [lit, setLit] = useState(false);
   const [step, setStep] = useState<Step>("form");
   const [endereco, setEndereco] = useState("");
   const [tipo, setTipo] = useState("Casa");
   const [conta, setConta] = useState(500);
   const [nome, setNome] = useState("");
   const [fone, setFone] = useState("");
+
+  useEffect(() => {
+    const a = window.setTimeout(() => setLit(true), 350);
+    const b = window.setTimeout(() => setIntro(false), 2300);
+    return () => { window.clearTimeout(a); window.clearTimeout(b); };
+  }, []);
 
   const r = useMemo(() => {
     const consumo = Math.max(180, Math.round((conta || 350) / 0.82));
@@ -32,6 +40,18 @@ export default function App() {
 
   return (
     <div className="shell">
+      {intro && (
+        <div className={`intro ${lit ? "on" : ""}`} onClick={() => setIntro(false)} role="button" tabIndex={0}>
+          <div className="lamp-wrap">
+            <div className="cord" />
+            <div className="shade" />
+            <div className="beam" />
+          </div>
+          <p>YWS Solar</p>
+          <small>Acendendo sua economia</small>
+        </div>
+      )}
+
       <header className="top">
         <div className="brand">
           <span className="mark" aria-hidden>⚡</span>

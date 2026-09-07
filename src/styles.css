@@ -18,7 +18,9 @@ button, input, select { font: inherit; color: inherit; }
   background: radial-gradient(circle at 30% 30%, #eaff6a, #7cff2a 45%, #0b2 80%);
   display: grid; place-items: center; color: #04120a; font-size: 22px;
   box-shadow: 0 0 24px rgba(140,255,40,.45);
+  animation: pulse 3.2s ease-in-out infinite;
 }
+@keyframes pulse { 50% { box-shadow: 0 0 34px rgba(160,255,50,.7); } }
 .brand small { display: block; font-size: 10px; letter-spacing: 2px; color: #9aa7ab; font-weight: 600; }
 .tag { color: #c9d4d7; font-size: 13px; }
 .tag b { color: #b8ff3c; }
@@ -40,39 +42,50 @@ button, input, select { font: inherit; color: inherit; }
   width: min(360px, 90%);
   filter: drop-shadow(0 0 35px rgba(160,255,40,.35));
   margin-top: 8px;
+  border-radius: 18px;
 }
 .card {
-  background: rgba(6,16,20,.78);
+  background: rgba(6,16,20,.82);
   border: 1px solid rgba(140,255,80,.18);
   border-radius: 22px;
-  padding: 28px 26px 22px;
+  padding: 26px 24px 20px;
   backdrop-filter: blur(18px);
   box-shadow: 0 30px 80px rgba(0,0,0,.45), inset 0 1px rgba(255,255,255,.06);
+  animation: rise .5s ease;
 }
-.card .logo-row { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; font-weight: 800; }
-.card h2 { margin: 0 0 6px; font-size: 26px; }
-.card .hint { margin: 0 0 18px; color: #8b979b; font-size: 14px; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.card .logo-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; font-weight: 800; }
+.card h2 { margin: 0 0 6px; font-size: 24px; }
+.card .hint { margin: 0 0 16px; color: #8b979b; font-size: 14px; }
 label { display: block; font-size: 12px; color: #c5d0d4; margin: 12px 0 6px; }
 .inp {
   width: 100%; height: 48px; border-radius: 12px; padding: 0 14px;
   border: 1px solid #2a3a40; background: rgba(0,0,0,.28);
 }
 .inp:focus { outline: none; border-color: #8dff3a; box-shadow: 0 0 0 3px rgba(141,255,58,.12); }
-go, select.inp { appearance: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 1px solid #2a3a40; background: rgba(0,0,0,.25); color: #dbe4e6;
+  border-radius: 999px; padding: 8px 12px; cursor: pointer; font-size: 13px;
+}
+.chip.on { border-color: #8dff3a; background: rgba(141,255,58,.12); color: #d8ff9a; }
 .go {
-  width: 100%; height: 52px; margin-top: 18px; border: 0; border-radius: 12px; cursor: pointer;
+  width: 100%; height: 52px; margin-top: 16px; border: 0; border-radius: 12px; cursor: pointer;
   background: linear-gradient(135deg, #c8ff33, #3ad400);
   color: #071006; font-weight: 800;
 }
 .go:hover { transform: translateY(-1px); box-shadow: 0 10px 30px rgba(120,255,40,.22); }
-.note { text-align: center; margin: 14px 0 0; color: #7f8b8f; font-size: 12px; }
-.money { font-size: 36px; color: #7CFF4A; font-weight: 800; margin: 6px 0 10px; }
+.note { text-align: center; margin: 12px 0 0; color: #7f8b8f; font-size: 12px; }
+.money { font-size: 34px; color: #7CFF4A; font-weight: 800; margin: 4px 0 8px; }
 .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
 .kpis div { border: 1px solid #243338; border-radius: 12px; padding: 10px; font-size: 13px; background: rgba(0,0,0,.2); }
 .kpis b { display: block; font-size: 16px; }
-.rowbtns { display: flex; gap: 8px; margin-top: 10px; }
+.bar { height: 8px; border-radius: 99px; background: #1b2a2e; overflow: hidden; margin: 8px 0 14px; }
+.bar span { display: block; height: 100%; width: 92%; background: linear-gradient(90deg,#c8ff33,#3ad400); }
+.rowbtns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.rowbtns .go, .rowbtns .ghost { flex: 1; min-width: 140px; display: grid; place-items: center; text-decoration: none; }
 .ghost {
-  flex: 1; height: 46px; border-radius: 12px; border: 1px solid #2d3d42;
+  height: 46px; border-radius: 12px; border: 1px solid #2d3d42;
   background: transparent; color: #dbe4e6; cursor: pointer;
 }
 .foot {
@@ -83,7 +96,11 @@ go, select.inp { appearance: none; }
 .foot div { font-size: 13px; color: #c5d0d4; }
 .foot b { display: block; color: #fff; margin-bottom: 4px; }
 @media (max-width: 900px) {
-  .stage, .foot { grid-template-columns: 1fr; }
-  .top { padding: 16px; }
-  .bulb { display: none; }
+  .stage, .foot, .kpis { grid-template-columns: 1fr; }
+  .top { padding: 16px; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .card { padding: 20px 16px; }
+  .go { height: 56px; font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
 }

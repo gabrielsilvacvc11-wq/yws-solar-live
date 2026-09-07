@@ -2,150 +2,247 @@ import { useEffect, useMemo, useState } from "react";
 import Particles from "./Particles";
 
 const WA = "https://wa.me/5562991758807";
-const TIPOS = ["Casa", "Apartamento", "Comércio", "Indústria", "Rural"];
+const TIPOS = ["Casa", "Apartamento", "Comércio", "Indústria", "Rural"] as const;
 const CONTAS = [300, 500, 800, 1000, 1500, 2000];
+const ICO: Record<string, string> = { Casa: "🏠", Apartamento: "🏢", Comércio: "🏬", Indústria: "🏭", Rural: "🌾" };
+const PHRASES = ["Analisando o potencial solar da sua região...", "Calculando seu consumo...", "Dimensionando seu sistema..."];
 const brl = (n: number) => n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-type Step = "form" | "result" | "lead";
+type View = "home" | "form" | "analyze" | "size" | "flow" | "result" | "lead";
+
+function Count({ to, prefix = "", suffix = "", money = false }: { to: number; prefix?: string; suffix?: string; money?: boolean }) {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) { setV(to); return; }
+    const t0 = performance.now();
+    let id = 0;
+    const run = (now: number) => {
+      const p = Math.min(1, (now - t0) / 1100);
+      setV(to * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) id = requestAnimationFrame(run);
+    };
+    id = requestAnimationFrame(run);
+    return () => cancelAnimationFrame(id);
+  }, [to]);
+  return <>{prefix}{money ? brl(v) : Math.round(v).toLocaleString("pt-BR")}{suffix}</>;
+}
 
 export default function App() {
-  const [intro, setIntro] = useState(true);
-  const [lit, setLit] = useState(false);
-  const [step, setStep] = useState<Step>("form");
+  const [view, setView] = useState<View>("home");
   const [endereco, setEndereco] = useState("");
   const [tipo, setTipo] = useState("Casa");
-  const [conta, setConta] = useState(500);
+  const [conta, setConta] = useState(800);
   const [nome, setNome] = useState("");
   const [fone, setFone] = useState("");
+  const [phrase, setPhrase] = useState(0);
+  const [panels, setPanels] = useState(0);
+  const [billShow, setBillShow] = useState(800);
 
-  useEffect(() => {
-    const a = window.setTimeout(() => setLit(true), 280);
-    const b = window.setTimeout(() => setIntro(false), 2600);
-    return () => { window.clearTimeout(a); window.clearTimeout(b); };
-  }, []);
+  const found = endereco.trim().length >= 8;
 
   const r = useMemo(() => {
     const consumo = Math.max(180, Math.round((conta || 350) / 0.82));
     const kwp = Math.max(1.2, consumo / (5.2 * 30.4 * 0.78));
     const ger = Math.round(kwp * 5.2 * 30.4 * 0.78);
     const eco = Math.round(ger * 0.82 * 100) / 100;
-    const mods = Math.max(4, Math.ceil((kwp * 1000) / 630));
-    const pay = eco > 0 ? (kwp * 4800) / (eco * 12) : 0;
-    const co2 = Math.round((ger * 12 * 0.075) * 10) / 10;
-    return { consumo, kwp, ger, eco, ano: eco * 12, v25: eco * 12 * 25, mods, pay, co2 };
+    const mods = Math.max(4, Math.min(16, Math.ceil((kwp * 1000) / 630)));
+    const after = Math.max(80, Math.round(conta - eco));
+    return { consumo, kwp, ger, eco, ano: eco * 12, mods, after };
   }, [conta]);
+
+  useEffect(() => {
+    if (view !== "analyze") return;
+    setPhrase(0);
+    const a = window.setTimeout(() => setPhrase(1), 900);
+    const b = window.setTimeout(() => setPhrase(2), 1800);
+    const c = window.setTimeout(() => setView("size"), 2800);
+    return () => { clearTimeout(a); clearTimeout(b); clearTimeout(c); };
+  }, [view]);
+
+  useEffect(() => {
+    if (view !== "size") return;
+    setPanels(0);
+    let i = 0;
+    const id = window.setInterval(() => {
+      i += 1;
+      setPanels(i);
+      if (i >= r.mods) {
+        clearInterval(id);
+        window.setTimeout(() => setView("flow"), 700);
+      }
+    }, 180);
+    return () => clearInterval(id);
+  }, [view, r.mods]);
+
+  useEffect(() => {
+    if (view !== "flow") return;
+    const id = window.setTimeout(() => setView("result"), 2200);
+    return () => clearTimeout(id);
+  }, [view]);
+
+  useEffect(() => {
+    if (view !== "analyze") return;
+    setBillShow(conta);
+    const steps = [conta, Math.round(conta * 0.55), r.after];
+    let i = 0;
+    const id = window.setInterval(() => {
+      i += 1;
+      if (i < steps.length) setBillShow(steps[i]);
+      else clearInterval(id);
+    }, 700);
+    return () => clearInterval(id);
+  }, [view, conta, r.after]);
 
   const base = `${endereco || "Goiás"} · ${tipo} · conta ${brl(conta)} · ${r.kwp.toFixed(2)} kWp · ${r.mods} painéis · economia ${brl(r.ano)}/ano`;
   const msgEsp = encodeURIComponent(`Olá YWS! Quero falar com um especialista.\n${base}`);
   const msgProj = encodeURIComponent(`Olá YWS! Quero meu projeto.\n${nome} · ${fone}\n${base}`);
 
+  const House = ({ glow }: { glow?: boolean }) => (
+    <svg className={`house ${glow ? "live" : ""}`} viewBox="0 0 280 160" aria-hidden>
+      <rect x="40" y="78" width="200" height="70" rx="6" fill="#141a1d" stroke="#3a4a40" />
+      <polygon points="30,78 140,18 250,78" fill="#1b2226" stroke="#c9a227" />
+      {Array.from({ length: r.mods }).map((_, i) => {
+        const col = i % 8;
+        const row = Math.floor(i / 8);
+        return <rect key={i} className={i < panels || view === "flow" || view === "result" || view === "lead" ? "pv on" : "pv"} x={70 + col * 16} y={36 + row * 12} width="14" height="10" rx="1" />;
+      })}
+      <rect x="118" y="108" width="28" height="40" fill="#0d1214" stroke="#8dff3a" />
+      <rect className="win" x="58" y="96" width="28" height="18" rx="2" />
+      <rect className="win" x="194" y="96" width="28" height="18" rx="2" />
+      {glow && <path className="flow-line" d="M140 42 L140 88 L168 88 L168 118" />}
+    </svg>
+  );
+
   return (
     <div className="shell">
       <Particles />
-      <div className="ambient" aria-hidden>
-        <i className="orb orb-a" />
-        <i className="orb orb-b" />
-      </div>
-
-      {intro && (
-        <div className={`intro ${lit ? "on" : ""}`} onClick={() => setIntro(false)} role="button" tabIndex={0}>
-          <div className="lamp-wrap">
-            <div className="halo" />
-            <div className="cord" />
-            <div className="shade" />
-            <div className="filament" />
-            <div className="beam" />
-            <div className="floor-glow" />
-          </div>
-          <p>YWS Solar</p>
-          <small>Acendendo sua economia</small>
-        </div>
-      )}
-
       <header className="top">
-        <div className="brand">
-          <span className="mark" aria-hidden>⚡</span>
+        <button className="brand" onClick={() => setView("home")}>
+          <span className="mark">⚡</span>
           <div>YWS Solar<small>ENERGIA INTELIGENTE</small></div>
-        </div>
-        <p className="tag">Um futuro mais sustentável <b>começa com você.</b></p>
+        </button>
+        <p className="tag">Mais energia para um <b>futuro melhor.</b></p>
       </header>
 
-      <main className="stage">
-        <section className="left">
-          <h5>ENERGIA SOLAR</h5>
-          <h1>Mais que energia, é um <span>futuro melhor.</span></h1>
-          <p>A YWS Solar oferece soluções completas em energia solar, unindo tecnologia, economia e sustentabilidade.</p>
-          <div className="photo">
-            <span className="photo-glow" />
-            <img className="bulb" alt="Painéis solares e energia YWS" src="https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=900&q=80" />
-          </div>
+      {view === "home" && (
+        <main className="home">
+          <section className="home-copy">
+            <h5>ENERGIA SOLAR</h5>
+            <h1>Transforme o sol <span>em economia.</span></h1>
+            <p>Descubra o sistema solar ideal para sua casa ou empresa e veja quanto você pode economizar.</p>
+            <button className="go energy" onClick={() => setView("form")}>Simular meu projeto →</button>
+            <p className="note">Resultado estimado em poucos segundos · Sem cadastro</p>
+          </section>
+          <aside className="home-art">
+            <img alt="Casa com energia solar YWS" src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80" />
+            <div className="float-card">Economia estimada<br /><b>R$ 730/mês</b></div>
+            <div className="float-card two">Redução da conta<br /><b>Até 95%</b></div>
+          </aside>
+        </main>
+      )}
+
+      {view !== "home" && (
+        <main className="stage">
+          <section className="left">
+            <h5>{tipo.toUpperCase()}</h5>
+            <h1>{ICO[tipo]} Sistema sendo <span>criado.</span></h1>
+            <House glow={view === "flow" || view === "result" || view === "lead"} />
+            {(view === "size" || view === "flow" || view === "result") && (
+              <p className="hint">{panels || r.mods} painéis · {r.kwp.toFixed(2)} kWp</p>
+            )}
+          </section>
+
+          <aside className="card" aria-live="polite">
+            {view === "form" && (
+              <>
+                <h2>Descubra quanto você pode economizar</h2>
+                <p className="hint">Faça uma simulação rápida do seu projeto solar.</p>
+                <label>CEP ou endereço</label>
+                <input className="inp" value={endereco} onChange={(e) => setEndereco(e.target.value)} placeholder="74900-000 ou Rua, número" />
+                {found && <p className="ok">📍 Localização encontrada</p>}
+                <label>Tipo de imóvel</label>
+                <div className="chips">{TIPOS.map((t) => <button type="button" key={t} className={tipo === t ? "chip on" : "chip"} onClick={() => setTipo(t)}>{ICO[t]} {t}</button>)}</div>
+                <label>Valor médio da conta</label>
+                <div className="bill">Hoje você paga aproximadamente <b>{brl(conta)}/mês</b></div>
+                <div className="chips">{CONTAS.map((v) => <button type="button" key={v} className={conta === v ? "chip on" : "chip"} onClick={() => setConta(v)}>{v >= 2000 ? "R$ 2.000+" : brl(v)}</button>)}</div>
+                <button className="go energy" onClick={() => setView("analyze")}>Simular meu projeto →</button>
+                <p className="note">Sem cadastro · resultado na hora</p>
+              </>
+            )}
+
+            {view === "analyze" && (
+              <div className="analyze">
+                <div className="sun" />
+                <h2>{PHRASES[phrase]}</h2>
+                <div className="bill drop">{brl(billShow)}/mês</div>
+                <p className="hint">Você pode reduzir significativamente sua conta de energia.</p>
+              </div>
+            )}
+
+            {view === "size" && (
+              <>
+                <h2>Sistema estimado</h2>
+                <p className="money">{r.kwp.toFixed(2)} kWp</p>
+                <p>{panels} de {r.mods} painéis no telhado</p>
+                <p>Geração estimada: {r.ger} kWh/mês</p>
+              </>
+            )}
+
+            {view === "flow" && (
+              <>
+                <h2>Energia em fluxo</h2>
+                <p className="flow-copy">Painéis → Inversor → Casa → Consumo</p>
+                <div className="path"><i /><i /><i /><i /></div>
+              </>
+            )}
+
+            {view === "result" && (
+              <>
+                <h2>Seu potencial solar está pronto.</h2>
+                <p className="hint">{tipo} · {endereco || "Goiás"}</p>
+                <div className="cmp"><span>Sem solar {brl(conta)}</span><span>Com solar {brl(r.after)}</span></div>
+                <div className="bars"><b style={{ height: "88%" }} /><b className="low" style={{ height: `${Math.max(12, (r.after / conta) * 88)}%` }} /></div>
+                <div className="money"><Count to={r.eco} money /></div>
+                <p>economia / mês · <Count to={r.ano} money /> / ano</p>
+                <div className="kpis">
+                  <div><b>{r.kwp.toFixed(2)} kWp</b>Sistema</div>
+                  <div><b>{r.mods}</b>Painéis</div>
+                  <div><b>{r.ger}</b>kWh/mês</div>
+                  <div><b>{r.consumo}</b>Consumo</div>
+                </div>
+                <p className="note">Os valores apresentados são estimativas. O projeto final depende de análise técnica do imóvel.</p>
+                <p>Gostou da sua simulação?</p>
+                <div className="rowbtns">
+                  <button className="go" onClick={() => setView("lead")}>Quero meu projeto →</button>
+                  <a className="ghost" href={`${WA}?text=${msgEsp}`} target="_blank" rel="noreferrer">Falar com um especialista</a>
+                </div>
+              </>
+            )}
+
+            {view === "lead" && (
+              <>
+                <h2>Quero meu projeto</h2>
+                <label>Nome</label>
+                <input className="inp" value={nome} onChange={(e) => setNome(e.target.value)} />
+                <label>WhatsApp</label>
+                <input className="inp" value={fone} onChange={(e) => setFone(e.target.value)} />
+                <a className="go" href={`${WA}?text=${msgProj}`} target="_blank" rel="noreferrer">Enviar para o especialista →</a>
+                <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setView("result")}>Voltar</button>
+              </>
+            )}
+          </aside>
+        </main>
+      )}
+
+      {view === "home" && (
+        <section className="how">
+          <div><b>1. Simule</b>Informe endereço e conta.</div>
+          <div><b>2. Projeto</b>Receba a proposta.</div>
+          <div><b>3. Instalação</b>Cuidamos de tudo.</div>
+          <div><b>4. Economia</b>Gere sua energia.</div>
         </section>
-
-        <aside className="card" aria-live="polite">
-          <div className="logo-row"><span className="mark" style={{ width: 28, height: 28, fontSize: 14 }}>⚡</span> YWS Solar</div>
-
-          {step === "form" && (
-            <>
-              <h2>Descubra quanto você pode economizar</h2>
-              <p className="hint">Faça uma simulação rápida do seu projeto solar.</p>
-              <label htmlFor="cep">CEP ou endereço</label>
-              <input id="cep" className="inp" placeholder="Ex: 74900-000 ou Rua, número" value={endereco} onChange={(e) => setEndereco(e.target.value)} />
-              <label>Tipo de imóvel</label>
-              <div className="chips">{TIPOS.map((t) => <button type="button" key={t} className={tipo === t ? "chip on" : "chip"} onClick={() => setTipo(t)}>{t}</button>)}</div>
-              <label>Valor médio da conta de energia</label>
-              <div className="chips">{CONTAS.map((v) => <button type="button" key={v} className={conta === v ? "chip on" : "chip"} onClick={() => setConta(v)}>{v >= 2000 ? "R$ 2.000+" : brl(v)}</button>)}</div>
-              <input className="inp" style={{ marginTop: 8 }} type="number" min={0} value={conta} onChange={(e) => setConta(Number(e.target.value))} aria-label="Digitar valor da conta" />
-              <button className="go" onClick={() => setStep("result")}>Simular meu projeto →</button>
-              <p className="note">Sem cadastro · resultado na hora</p>
-            </>
-          )}
-
-          {step === "result" && (
-            <>
-              <h2>Seu projeto estimado</h2>
-              <p className="hint">{tipo} · {endereco || "Goiás"}</p>
-              <div>Economia anual estimada</div>
-              <div className="money">{brl(r.ano)}</div>
-              <div className="bar" aria-hidden><span /></div>
-              <p>Seu projeto pode gerar até <b>{r.ger.toLocaleString("pt-BR")} kWh/mês</b>.</p>
-              <div className="kpis">
-                <div><b>{r.consumo} kWh</b>Consumo mensal</div>
-                <div><b>{r.kwp.toFixed(2)} kWp</b>Sistema recomendado</div>
-                <div><b>{r.mods}</b>Painéis estimados</div>
-                <div><b>{brl(r.eco)}</b>Economia / mês</div>
-                <div><b>{brl(r.v25)}</b>Em 25 anos</div>
-                <div><b>{r.co2} t</b>CO₂ evitado / ano</div>
-              </div>
-              <p className="note">Estimativa. O projeto final depende de visita e análise técnica.</p>
-              <div className="rowbtns">
-                <button className="go" onClick={() => setStep("lead")}>Quero meu projeto</button>
-                <a className="ghost" href={`${WA}?text=${msgEsp}`} target="_blank" rel="noreferrer">Falar com um especialista</a>
-              </div>
-              <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setStep("form")}>Nova simulação</button>
-            </>
-          )}
-
-          {step === "lead" && (
-            <>
-              <h2>Quero meu projeto</h2>
-              <p className="hint">Passamos esses dados para o especialista fechar o orçamento.</p>
-              <label htmlFor="nome">Nome</label>
-              <input id="nome" className="inp" value={nome} onChange={(e) => setNome(e.target.value)} />
-              <label htmlFor="fone">WhatsApp</label>
-              <input id="fone" className="inp" value={fone} onChange={(e) => setFone(e.target.value)} placeholder="(62) 9xxxx-xxxx" />
-              <a className="go" href={`${WA}?text=${msgProj}`} target="_blank" rel="noreferrer">Enviar para o especialista →</a>
-              <button className="ghost" style={{ width: "100%", marginTop: 8 }} onClick={() => setStep("result")}>Voltar ao resultado</button>
-            </>
-          )}
-        </aside>
-      </main>
-
-      <footer className="foot">
-        <div><b>Energia Solar</b>Economia na sua conta de luz.</div>
-        <div><b>Sustentabilidade</b>Um planeta melhor para as próximas gerações.</div>
-        <div><b>Segurança</b>Tecnologia e confiança em cada projeto.</div>
-        <div><b>Suporte Especializado</b>Estamos sempre com você.</div>
-      </footer>
+      )}
     </div>
   );
 }

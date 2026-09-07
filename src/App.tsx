@@ -18,8 +18,8 @@ export default function App() {
   const [fone, setFone] = useState("");
 
   useEffect(() => {
-    const a = window.setTimeout(() => setLit(true), 350);
-    const b = window.setTimeout(() => setIntro(false), 2300);
+    const a = window.setTimeout(() => setLit(true), 280);
+    const b = window.setTimeout(() => setIntro(false), 2600);
     return () => { window.clearTimeout(a); window.clearTimeout(b); };
   }, []);
 
@@ -40,12 +40,21 @@ export default function App() {
 
   return (
     <div className="shell">
+      <div className="ambient" aria-hidden>
+        <i className="orb orb-a" />
+        <i className="orb orb-b" />
+        <i className="spark s1" /><i className="spark s2" /><i className="spark s3" /><i className="spark s4" />
+      </div>
+
       {intro && (
         <div className={`intro ${lit ? "on" : ""}`} onClick={() => setIntro(false)} role="button" tabIndex={0}>
           <div className="lamp-wrap">
+            <div className="halo" />
             <div className="cord" />
             <div className="shade" />
+            <div className="filament" />
             <div className="beam" />
+            <div className="floor-glow" />
           </div>
           <p>YWS Solar</p>
           <small>Acendendo sua economia</small>
@@ -65,7 +74,10 @@ export default function App() {
           <h5>ENERGIA SOLAR</h5>
           <h1>Mais que energia, é um <span>futuro melhor.</span></h1>
           <p>A YWS Solar oferece soluções completas em energia solar, unindo tecnologia, economia e sustentabilidade.</p>
-          <img className="bulb" alt="Painéis solares e energia YWS" src="https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=900&q=80" />
+          <div className="photo">
+            <span className="photo-glow" />
+            <img className="bulb" alt="Painéis solares e energia YWS" src="https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=900&q=80" />
+          </div>
         </section>
 
         <aside className="card" aria-live="polite">
